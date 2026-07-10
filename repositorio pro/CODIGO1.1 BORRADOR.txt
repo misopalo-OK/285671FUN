@@ -1,0 +1,290 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_PRODUCTOS 100
+#define MIN_STOCK_GLOBAL 5 
+
+typedef struct {
+    char nombre[50];      
+    char presentacion[20]; 
+    int cantidad;
+    char lote[20];
+    float precio;
+    int activo;           
+} Producto;
+
+Producto inventario[MAX_PRODUCTOS];
+int totalProductos = 0;
+int entradasDelDia = 0;
+int salidasDelDia = 0;
+
+void menuPrincipal();
+void registrarProducto();
+void consultarProductos();
+void eliminarProducto();
+void verificarStockMinimo();
+void generarInformeDiario();
+void limpiarPantalla();
+
+// --- FUNCIÓN PRINCIPAL ---
+int main() {
+
+    strcpy(inventario[0].nombre, "Agua Purificada");
+    strcpy(inventario[0].presentacion, "1 Ltr");
+    inventario[0].cantidad = 15;
+    strcpy(inventario[0].lote, "LOTE-A1");
+    inventario[0].precio = 1.25;
+    inventario[0].activo = 1;
+    totalProductos++;
+
+    strcpy(inventario[1].nombre, "Agua Purificada");
+    strcpy(inventario[1].presentacion, "600 ml");
+    inventario[1].cantidad = 3; 
+    strcpy(inventario[1].lote, "LOTE-B2");
+    inventario[1].precio = 0.50;
+    inventario[1].activo = 1;
+    totalProductos++;
+
+    menuPrincipal();
+    return 0;
+}
+
+// REQ001: MENÚ PRINCIPAL
+void menuPrincipal() {
+    int opcion;
+    do {
+        limpiarPantalla();
+        printf("=========================================\n");
+        printf("   SISTEMA DE GESTION DE INVENTARIO\n");
+        printf("=========================================\n");
+        printf("1. Registrar nuevo lote (Alta de Producto)\n");
+        printf("2. Consultar inventario disponible\n");
+        printf("3. Dar de baja / Eliminar producto\n");
+        printf("4. Verificar alertas de stock bajo\n");
+        printf("5. Generar resumen/informe del dia\n");
+        printf("6. Salir\n");
+        printf("=========================================\n");
+        printf("Seleccione una opcion: ");
+        scanf("%d", &opcion);
+        getchar(); 
+
+        switch(opcion) {
+            case 1:
+                registrarProducto();
+                break;
+            case 2:
+                consultarProductos();
+                break;
+            case 3:
+                eliminarProducto();
+                break;
+            case 4:
+                verificarStockMinimo();
+                break;
+            case 5:
+                generarInformeDiario();
+                break;
+            case 6:
+                printf("\nSaliendo del sistema de forma segura. ¡Hasta luego!\n");
+                break;
+            default:
+                printf("\nOpcion no valida. Intente de nuevo.\n");
+                printf("Presione Enter para continuar...");
+                getchar();
+        }
+    } while(opcion != 6);
+}
+
+//REQ002
+void registrarProducto() {
+    limpiarPantalla();
+    printf("--- REGISTRAR NUEVO INGRESO (ALTA) ---\n");
+    
+    if (totalProductos >= MAX_PRODUCTOS) {
+        printf("Error: Capacidad maxima de inventario alcanzada.\n");
+        printf("\nPresione Enter para volver...");
+        getchar();
+        return;
+    }
+
+    Producto nuevo;
+    int opcPresentacion;
+    
+    strcpy(nuevo.nombre, "Agua Purificada");
+
+
+    do {
+        printf("\nSeleccione la presentacion/capacidad a registrar:\n");
+        printf("1. 600 ml\n");
+        printf("2. 1 Ltr\n");
+        printf("3. 5 Litr\n");
+        printf("4. Bidon de agua\n");
+        printf("Seleccione una opcion (1-4): ");
+        scanf("%d", &opcPresentacion);
+        getchar(); // Limpiar buffer del teclado
+
+        switch(opcPresentacion) {
+            case 1: strcpy(nuevo.presentacion, "600 ml"); break;
+            case 2: strcpy(nuevo.presentacion, "1 Ltr"); break;
+            case 3: strcpy(nuevo.presentacion, "5 Litr"); break;
+            case 4: strcpy(nuevo.presentacion, "Bidon de agua"); break;
+            default: printf("\n[!] Opcion incorrecta. Por favor, elija un numero del 1 al 4.\n"); break;
+        }
+    } while(opcPresentacion < 1 || opcPresentacion > 4);
+
+    printf("\nProducto a registrar: %s (%s)\n", nuevo.nombre, nuevo.presentacion);
+
+    printf("Cantidad de unidades a ingresar: ");
+    scanf("%d", &nuevo.cantidad);
+    getchar();
+
+    printf("Codigo de lote de produccion: ");
+    fgets(nuevo.lote, sizeof(nuevo.lote), stdin);
+    nuevo.lote[strcspn(nuevo.lote, "\n")] = 0;
+
+    printf("Precio unitario de venta ($): ");
+    scanf("%f", &nuevo.precio);
+    getchar();
+
+    nuevo.activo = 1; 
+
+    inventario[totalProductos] = nuevo;
+    totalProductos++;
+    entradasDelDia += nuevo.cantidad;
+
+    printf("\n¡Exito! Lote de %s [%s] registrado correctamente.\n", nuevo.nombre, nuevo.presentacion);
+    printf("\nPresione Enter para volver...");
+    getchar();
+}
+
+
+void consultarProductos() {
+    limpiarPantalla();
+    printf("--- CONSULTA DE INVENTARIO DISPONIBLE ---\n");
+    printf("%-4s %-20s %-15s %-10s %-10s %-10s\n", "ID", "Nombre", "Presentacion", "Cantidad", "Lote", "Precio");
+    printf("-----------------------------------------------------------------------\n");
+    
+    int encontrados = 0;
+    for(int i = 0; i < totalProductos; i++) {
+        if(inventario[i].activo == 1) { 
+            printf("%-4d %-20s %-15s %-10d %-10s $%-9.2f\n", 
+                   i + 1, inventario[i].nombre, inventario[i].presentacion, inventario[i].cantidad, inventario[i].lote, inventario[i].precio);
+            encontrados++;
+        }
+    }
+    
+    if(encontrados == 0) {
+        printf("El inventario se encuentra vacio en este momento.\n");
+    }
+
+    printf("\nPresione Enter para volver...");
+    getchar();
+}
+
+
+void eliminarProducto() {
+    limpiarPantalla();
+    printf("--- DAR DE BAJA / ELIMINAR PRODUCTO ---\n");
+    
+    printf("%-4s %-20s %-15s %-10s\n", "ID", "Nombre", "Presentacion", "Cantidad");
+    printf("----------------------------------------------------\n");
+    int activos = 0;
+    for(int i = 0; i < totalProductos; i++) {
+        if(inventario[i].activo == 1) {
+            printf("%-4d %-20s %-15s %-10d\n", i + 1, inventario[i].nombre, inventario[i].presentacion, inventario[i].cantidad);
+            activos++;
+        }
+    }
+
+    if (activos == 0) {
+        printf("No existen productos registrados para dar de baja.\n");
+        printf("\nPresione Enter para volver...");
+        getchar();
+        return;
+    }
+
+    int idEliminar;
+    printf("\nIngrese el ID del producto que desea dar de baja: ");
+    scanf("%d", &idEliminar);
+    getchar();
+
+    int index = idEliminar - 1;
+    if(index >= 0 && index < totalProductos && inventario[index].activo == 1) {
+        char confirmar;
+        printf("¿Confirmar retiro del sistema para '%s' (%s)? (S/N): ", inventario[index].nombre, inventario[index].presentacion);
+        scanf("%c", &confirmar);
+        getchar();
+
+        if(confirmar == 'S' || confirmar == 's') {
+            inventario[index].activo = 0; 
+            salidasDelDia += inventario[index].cantidad; 
+            printf("\nEl producto fue removido correctamente del catalogo.\n");
+        } else {
+            printf("\nOperacion cancelada.\n");
+        }
+    } else {
+        printf("\nID invalido o inexistente.\n");
+    }
+
+    printf("\nPresione Enter para volver...");
+    getchar();
+}
+
+// --- REQ007: ALERTA DE STOCK BAJO ---
+void verificarStockMinimo() {
+    limpiarPantalla();
+    printf("--- ALERTAS DE STOCK CRITICO (Minimo Requerido: %d unidades) ---\n", MIN_STOCK_GLOBAL);
+    printf("-----------------------------------------------------------------\n");
+    
+    int alertas = 0;
+    for(int i = 0; i < totalProductos; i++) {
+        if(inventario[i].activo == 1 && inventario[i].cantidad < MIN_STOCK_GLOBAL) {
+            printf("[ALERTA] %s de (%s) [Lote: %s] requiere reabastecimiento. Stock: %d uds.\n", 
+                   inventario[i].nombre, inventario[i].presentacion, inventario[i].lote, inventario[i].cantidad);
+            alertas++;
+        }
+    }
+
+    if(alertas == 0) {
+        printf("Todo en orden. Todas las botellas y bidones cuentan con stock suficiente.\n");
+    }
+
+    printf("\nPresione Enter para volver...");
+    getchar();
+}
+
+//
+void generarInformeDiario() {
+    limpiarPantalla();
+    printf("==================================================\n");
+    printf("   INFORME DEL BALANCE DIARIO DE AGUA PURIFICADA\n");
+    printf("==================================================\n");
+    
+    int stockTotalActual = 0;
+    int itemsActivos = 0;
+
+    for(int i = 0; i < totalProductos; i++) {
+        if(inventario[i].activo == 1) {
+            stockTotalActual += inventario[i].cantidad;
+            itemsActivos++;
+        }
+    }
+
+    printf("-> Variaciones de presentacion activas: %d\n", itemsActivos);
+    printf("-> Total de liquido/unidades en stock: %d unidades\n", stockTotalActual);
+    printf("-> Entradas registradas el dia de hoy:   %d unidades\n", entradasDelDia);
+    printf("-> Salidas (Bajas de inventario) de hoy: %d unidades\n", salidasDelDia);
+    printf("==================================================\n");
+
+    printf("\nPresione Enter para volver...");
+    getchar();
+}
+
+void limpiarPantalla() {
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
+}
