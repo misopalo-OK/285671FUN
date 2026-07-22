@@ -1,0 +1,326 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define MAX_PRODUCTOS 100
+#define STOCK_MINIMO_DEFAULT 5
+
+// Estructura de datos del Producto
+typedef struct {
+    char codigo[15];   // Ej: BOT600, BOT1LT, BOT5LT, BIDON
+    char nombre[50];
+    int cantidad;
+    char lote[20];
+    float precio;
+    int entradas;     
+    int salidas;       
+} Producto;
+
+// Base de datos en memoria
+Producto inventario[MAX_PRODUCTOS];
+int total_productos = 0;
+
+void mostrarMenu();
+void registrarProducto();     // REQ002
+void consultarInventario();   // REQ003
+void buscarProducto();        // REQ004
+void actualizarCantidad();    // REQ005
+void eliminarProducto();      // REQ006
+void verificarStockMinimo();  // REQ007
+void generarInformeDiario();  // REQ008
+
+int main() {
+    int opcion;
+
+    // REQ001: Menú principal interactivo
+    do {
+        mostrarMenu();
+        printf("Seleccione una opcion: ");
+        if (scanf("%d", &opcion) != 1) {
+            while (getchar() != '\n'); // Limpieza del búfer de entrada
+            continue;
+        }
+
+        switch (opcion) {
+            case 1:
+                registrarProducto();
+                break;
+            case 2:
+                consultarInventario();
+                break;
+            case 3:
+                buscarProducto();
+                break;
+            case 4:
+                actualizarCantidad();
+                break;
+            case 5:
+                eliminarProducto();
+                break;
+            case 6:
+                verificarStockMinimo();
+                break;
+            case 7:
+                generarInformeDiario();
+                break;
+            case 8:
+                printf("\nSaliendo del sistema de VITALIC... ¡Hasta luego!\n");
+                break;
+            default:
+                printf("\n[Opcion invalida]. Seleccione un numero de 1 a 8.\n");
+        }
+    } while (opcion != 8);
+
+    return 0;
+}
+
+// REQ001: Menú principal del sistema
+void mostrarMenu() {
+    printf("\n==================================================\n");
+    printf("     EMPRESA VITALIC - GESTION DE INVENTARIO      \n");
+    printf("==================================================\n");
+    printf(" 1. Registrar nuevo producto\n");
+    printf(" 2. Consultar inventario completo\n");
+    printf(" 3. Buscar producto por codigo\n");
+    printf(" 4. Actualizar cantidad / stock\n");
+    printf(" 5. Eliminar producto por codigo\n");
+    printf(" 6. Verificar alertas de stock bajo\n");
+    printf(" 7. Generar informe diario\n");
+    printf(" 8. Salir del programa\n");
+    printf("==================================================\n");
+}
+
+// REQ002: Registrar producto
+void registrarProducto() {
+    if (total_productos >= MAX_PRODUCTOS) {
+        printf("\nError: El inventario de VITALIC ha alcanzado la capacidad maxima.\n");
+        return;
+    }
+
+    Producto p;
+    printf("\n--- VITALIC | REGISTRAR NUEVO PRODUCTO ---\n");
+    
+    printf("Ingrese el codigo del producto (Ej: BOT600, BOT1LT, BOT5LT, BIDON): ");
+    scanf("%s", p.codigo);
+
+    // Validación de código único
+    for (int i = 0; i < total_productos; i++) {
+        if (strcmp(inventario[i].codigo, p.codigo) == 0) {
+            printf("Error: El codigo '%s' ya existe en el sistema.\n", p.codigo);
+            return;
+        }
+    }
+
+    printf("Ingrese nombre del producto: ");
+    getchar(); 
+    fgets(p.nombre, sizeof(p.nombre), stdin);
+    p.nombre[strcspn(p.nombre, "\n")] = 0; 
+
+    printf("Ingrese cantidad inicial: ");
+    scanf("%d", &p.cantidad);
+
+    printf("Ingrese numero de lote: ");
+    scanf("%s", p.lote);
+
+    printf("Ingrese precio unitario ($): ");
+    scanf("%f", &p.precio);
+
+    p.entradas = p.cantidad;
+    p.salidas = 0;
+
+    inventario[total_productos] = p;
+    total_productos++;
+
+    printf("-> Producto registrado con exito en el sistema VITALIC.\n");
+}
+
+// REQ003: Consulta general de inventario
+void consultarInventario() {
+    printf("\n===================================================\n");
+    printf("        VITALIC - CONSULTA GENERAL DE STOCK        \n");
+    printf("===================================================\n");
+
+    if (total_productos == 0) {
+        printf("No se encontraron productos registrados en la base de datos.\n");
+    } else {
+        for (int i = 0; i < total_productos; i++) {
+            printf("Codigo: %s | Nombre: %s | Cantidad: %d | Lote: %s | Precio: $%.2f\n",
+                   inventario[i].codigo,
+                   inventario[i].nombre,
+                   inventario[i].cantidad,
+                   inventario[i].lote,
+                   inventario[i].precio);
+        }
+    }
+    printf("===================================================\n");
+}
+
+// REQ004: Búsqueda de producto por código
+void buscarProducto() {
+    char codigo[15];
+    printf("\n--- VITALIC | BUSQUEDA DE PRODUCTO POR CODIGO ---\n");
+    printf("Ingrese el codigo a consultar: ");
+    scanf("%s", codigo);
+
+    for (int i = 0; i < total_productos; i++) {
+        if (strcmp(inventario[i].codigo, codigo) == 0) {
+            printf("\nResultado de la busqueda:\n");
+            printf("Codigo: %s | Nombre: %s | Cantidad: %d | Lote: %s | Precio: $%.2f\n",
+                   inventario[i].codigo,
+                   inventario[i].nombre,
+                   inventario[i].cantidad,
+                   inventario[i].lote,
+                   inventario[i].precio);
+            return;
+        }
+    }
+
+    printf("-> No existe ningun producto registrado bajo el codigo '%s'.\n", codigo);
+}
+
+// REQ005: Actualizar cantidad / stock
+void actualizarCantidad() {
+    char codigo[15];
+    int nuevaCantidad;
+
+    printf("\n--- VITALIC | MODIFICAR CANTIDAD / STOCK ---\n");
+    printf("Ingrese el codigo del producto a actualizar: ");
+    scanf("%s", codigo);
+
+    for (int i = 0; i < total_productos; i++) {
+        if (strcmp(inventario[i].codigo, codigo) == 0) {
+            printf("Producto: %s | Cantidad Actual: %d\n", inventario[i].nombre, inventario[i].cantidad);
+            printf("Ingrese la nueva cantidad: ");
+            scanf("%d", &nuevaCantidad);
+
+            int dif = nuevaCantidad - inventario[i].cantidad;
+            if (dif > 0) {
+                inventario[i].entradas += dif;
+            } else if (dif < 0) {
+                inventario[i].salidas += (-dif);
+            }
+
+            inventario[i].cantidad = nuevaCantidad;
+            printf("-> Stock actualizado correctamente en VITALIC.\n");
+            return;
+        }
+    }
+
+    printf("-> Error: El producto especificado no fue encontrado.\n");
+}
+
+// REQ006: Eliminar producto
+void eliminarProducto() {
+    char codigo[15];
+    printf("\n--- VITALIC | ELIMINACION DE PRODUCTO ---\n");
+    printf("Ingrese el codigo del producto a dar de baja: ");
+    scanf("%s", codigo);
+
+    for (int i = 0; i < total_productos; i++) {
+        if (strcmp(inventario[i].codigo, codigo) == 0) {
+            for (int j = i; j < total_productos - 1; j++) {
+                inventario[j] = inventario[j + 1];
+            }
+            total_productos--;
+            printf("-> Producto '%s' borrado del inventario correctamente.\n", codigo);
+            return;
+        }
+    }
+
+    printf("-> Error: No se encuentra el producto indicado para eliminar.\n");
+}
+
+// REQ007: Alertas de stock mínimo
+void verificarStockMinimo() {
+    int minimo = STOCK_MINIMO_DEFAULT;
+    int alertas = 0;
+
+    printf("\n===================================================\n");
+    printf("    VITALIC - VERIFICACION STOCK MINIMO (< %d)     \n", minimo);
+    printf("===================================================\n");
+
+    for (int i = 0; i < total_productos; i++) {
+        if (inventario[i].cantidad < minimo) {
+            printf("[ALERTA] Codigo: %s | Nombre: %s | Stock actual: %d unidades\n",
+                   inventario[i].codigo, inventario[i].nombre, inventario[i].cantidad);
+            alertas++;
+        }
+    }
+
+    if (alertas == 0) {
+        printf("Todos los productos tienen existencias por encima del minimo.\n");
+    }
+    printf("===================================================\n");
+}
+
+// REQ008: Informe diario con fecha, hora y exportación a TXT
+void generarInformeDiario() {
+    int totalUnidades = 0, totalEntradas = 0, totalSalidas = 0;
+
+    // Obtener fecha y hora actual del sistema
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+
+    FILE *archivo = fopen("informe_diario.txt", "w");
+    if (archivo == NULL) {
+        printf("\nError: No se pudo crear el archivo del informe TXT.\n");
+        return;
+    }
+
+    // Encabezado con fecha y hora en pantalla
+    printf("\n===================================================\n");
+    printf("         EMPRESA VITALIC - INFORME DIARIO          \n");
+    printf(" Fecha y Hora: %02d/%02d/%04d %02d:%02d:%02d\n", 
+           tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, 
+           tm.tm_hour, tm.tm_min, tm.tm_sec);
+    printf("===================================================\n");
+
+    // Encabezado con fecha y hora en el archivo TXT
+    fprintf(archivo, "===================================================\n");
+    fprintf(archivo, "         EMPRESA VITALIC - INFORME DIARIO          \n");
+    fprintf(archivo, " Fecha y Hora: %02d/%02d/%04d %02d:%02d:%02d\n", 
+            tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, 
+            tm.tm_hour, tm.tm_min, tm.tm_sec);
+    fprintf(archivo, "===================================================\n");
+
+    for (int i = 0; i < total_productos; i++) {
+        printf("Codigo: %s | Nombre: %s | Entradas: %d | Salidas: %d | Stock: %d\n",
+               inventario[i].codigo,
+               inventario[i].nombre,
+               inventario[i].entradas,
+               inventario[i].salidas,
+               inventario[i].cantidad);
+
+        fprintf(archivo, "Codigo: %s | Nombre: %s | Entradas: %d | Salidas: %d | Stock: %d\n",
+                inventario[i].codigo,
+                inventario[i].nombre,
+                inventario[i].entradas,
+                inventario[i].salidas,
+                inventario[i].cantidad);
+
+        totalUnidades += inventario[i].cantidad;
+        totalEntradas += inventario[i].entradas;
+        totalSalidas += inventario[i].salidas;
+    }
+
+    printf("---------------------------------------------------\n");
+    printf("RESUMEN GENERAL:\n");
+    printf("Total de tipos de producto: %d\n", total_productos);
+    printf("Total de unidades en stock: %d\n", totalUnidades);
+    printf("Total entradas acumuladas:  %d\n", totalEntradas);
+    printf("Total salidas acumuladas:   %d\n", totalSalidas);
+    printf("===================================================\n");
+
+    fprintf(archivo, "---------------------------------------------------\n");
+    fprintf(archivo, "RESUMEN GENERAL:\n");
+    fprintf(archivo, "Total de tipos de producto: %d\n", total_productos);
+    fprintf(archivo, "Total de unidades en stock: %d\n", totalUnidades);
+    fprintf(archivo, "Total entradas acumuladas:  %d\n", totalEntradas);
+    fprintf(archivo, "Total salidas acumuladas:   %d\n", totalSalidas);
+    fprintf(archivo, "===================================================\n");
+
+    fclose(archivo);
+
+    printf("\n-> ¡El informe de VITALIC!\n");
+}
